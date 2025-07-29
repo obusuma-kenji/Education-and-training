@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教育訓練給付金インタラクティブガイド</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #FDFBF6;
+            color: #424874;
+        }
+        .accent-color {
+            background-color: #A6B1E1;
+        }
+        .accent-color-light {
+            background-color: #DCD6F7;
+        }
+        .accent-text {
+            color: #A6B1E1;
+        }
+        .btn-primary {
+            background-color: #A6B1E1;
+            color: #FFFFFF;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #424874;
+        }
+        .btn-secondary {
+            background-color: #FFFFFF;
+            color: #424874;
+            border: 1px solid #A6B1E1;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover {
+            background-color: #DCD6F7;
+        }
+        .btn-tab.active {
+            background-color: #424874;
+            color: #FFFFFF;
+            border-color: #424874;
+        }
+        .btn-tab {
+            background-color: #FFFFFF;
+            color: #424874;
+            border: 1px solid #A6B1E1;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .step-item::before {
+            content: '';
+            position: absolute;
+            left: 1.25rem;
+            top: 2.5rem;
+            bottom: -2.5rem;
+            width: 2px;
+            background-color: #A6B1E1;
+            transform: translateX(-50%);
+        }
+        .step-item:last-child::before {
+            display: none;
+        }
+        .step-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #A6B1E1;
+            color: white;
+            z-index: 10;
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#424874] to-[#A6B1E1] mb-2">教育訓練給付金インタラクティブガイド</h1>
+            <p class="text-lg text-gray-600">あなたのキャリアアップとリスキリングを国が支援します。</p>
+        </header>
+
+        <main class="space-y-16">
+            
+            <!-- 1. あなたは対象？ Eligibility Check -->
+            <section id="eligibility" x-data="eligibilityChecker()" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-1 text-center">Step 1: あなたは対象？</h2>
+                <p class="text-center text-gray-500 mb-6">簡単な質問に答えて、あなたが給付金の対象になるか確認してみましょう。</p>
+                
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div>
+                        <label class="font-semibold block mb-2">1. 制度の利用は初めてですか？</label>
+                        <div class="flex space-x-4">
+                            <button @click="isFirstTime = true" :class="{'btn-tab active': isFirstTime, 'btn-tab': !isFirstTime}" class="w-full py-2 rounded-lg">はい、初めてです</button>
+                            <button @click="isFirstTime = false" :class="{'btn-tab active': !isFirstTime, 'btn-tab': isFirstTime}" class="w-full py-2 rounded-lg">いいえ、2回目以降です</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="font-semibold block mb-2">2. 現在の就業状況は？</label>
+                        <div class="flex space-x-4">
+                            <button @click="isEmployed = true" :class="{'btn-tab active': isEmployed, 'btn-tab': !isEmployed}" class="w-full py-2 rounded-lg">在職中</button>
+                            <button @click="isEmployed = false" :class="{'btn-tab active': !isEmployed, 'btn-tab': isEmployed}" class="w-full py-2 rounded-lg">離職中</button>
+                        </div>
+                    </div>
+
+                    <div x-show="!isEmployed">
+                        <label class="font-semibold block mb-2">3. 離職してから1年以内ですか？</label>
+                        <div class="flex space-x-4">
+                            <button @click="isWithinYear = true" :class="{'btn-tab active': isWithinYear, 'btn-tab': !isWithinYear}" class="w-full py-2 rounded-lg">はい</button>
+                            <button @click="isWithinYear = false" :class="{'btn-tab active': !isWithinYear, 'btn-tab': isWithinYear}" class="w-full py-2 rounded-lg">いいえ</button>
+                        </div>
+                         <p x-show="!isWithinYear" class="text-sm text-yellow-700 mt-2">※原則として対象外ですが、妊娠・出産・疾病等の理由がある場合、適用期間を最大20年延長できる可能性があります。詳細はハローワークにご相談ください。</p>
+                    </div>
+
+                    <div>
+                        <label for="insuranceYears" class="font-semibold block mb-2">4. 雇用保険の加入期間は合計で何年ですか？</label>
+                        <input type="number" id="insuranceYears" x-model.number="insuranceYears" min="0" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A6B1E1] focus:border-transparent" placeholder="例: 5">
+                    </div>
+                </div>
+
+                <div x-show="resultMessage" x-cloak class="mt-8 p-4 rounded-lg text-center transition-all" :class="isEligible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                    <p class="font-bold text-lg" x-text="resultMessage"></p>
+                    <p class="text-sm mt-1" x-html="resultDetail"></p>
+                </div>
+            </section>
+
+            <!-- 2. いくらもらえる？ Benefit Calculator -->
+            <section id="calculator" x-data="benefitCalculator()" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-1 text-center">Step 2: いくらもらえる？</h2>
+                <p class="text-center text-gray-500 mb-6">受講したい講座の種類と費用から、給付額をシミュレーションします。</p>
+
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <button @click="selectBenefitType('general')" :class="{'btn-tab active': benefitType === 'general', 'btn-tab': benefitType !== 'general'}" class="w-full py-3 rounded-lg font-semibold">一般教育訓練</button>
+                    <button @click="selectBenefitType('specific')" :class="{'btn-tab active': benefitType === 'specific', 'btn-tab': benefitType !== 'specific'}" class="w-full py-3 rounded-lg font-semibold">特定一般教育訓練</button>
+                    <button @click="selectBenefitType('professional')" :class="{'btn-tab active': benefitType === 'professional', 'btn-tab': benefitType !== 'professional'}" class="w-full py-3 rounded-lg font-semibold">専門実践教育訓練</button>
+                </div>
+
+                <div class="max-w-lg mx-auto mb-6">
+                    <label for="courseFee" class="font-semibold block mb-2 text-center">講座の受講費用（円）</label>
+                    <input type="number" id="courseFee" x-model.number="courseFee" @input.debounce.500ms="updateChart()" min="0" step="10000" class="w-full p-3 text-xl text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A6B1E1] focus:border-transparent" placeholder="例: 300000">
+                </div>
+                
+                <div class="text-center mb-6" x-show="benefitType === 'professional' || benefitType === 'specific'">
+                    <h3 class="font-semibold mb-2">追加給付の条件を満たしますか？</h3>
+                    <div class="flex justify-center items-center space-x-4">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" x-model="addBenefit" @change="updateChart()" class="h-5 w-5 rounded text-[#424874] focus:ring-[#A6B1E1]">
+                            <span>資格取得＋修了後1年以内に就職</span>
+                        </label>
+                    </div>
+                     <div class="flex justify-center items-center space-x-4 mt-2" x-show="benefitType === 'professional'">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" x-model="wageIncrease" @change="updateChart()" class="h-5 w-5 rounded text-[#424874] focus:ring-[#A6B1E1]">
+                            <span>さらに賃金が5%以上UP</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">※2024年10月1日以降の受講開始者が対象です。</p>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="benefitChart" width="400" height="300"></canvas>
+                </div>
+                <div id="chart-legend" class="flex justify-center mt-4 space-x-4 text-sm"></div>
+            </section>
+
+            <!-- 3. 手続きの流れは？ Application Process -->
+            <section id="process" x-data="{ openStep: '' }" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-1 text-center">Step 3: 手続きの流れは？</h2>
+                <p class="text-center text-gray-500 mb-8">給付金を受け取るまでのステップと必要書類を確認しましょう。</p>
+
+                <div class="max-w-3xl mx-auto">
+                    <div class="relative space-y-12">
+                        <!-- Step 1: 受講前 -->
+                        <div class="step-item relative pl-16">
+                            <div class="step-icon">1</div>
+                            <div class="pt-1">
+                                <h3 class="text-xl font-bold mb-2">受講前</h3>
+                                <p class="text-gray-600 mb-4">講座の申し込み前に、ハローワークで資格の確認と必要な手続きを行います。</p>
+                                <button @click="openStep = (openStep === 'before' ? '' : 'before')" class="btn-secondary text-sm px-4 py-2 rounded-full">詳細と必要書類を見る</button>
+                                <div x-show="openStep === 'before'" x-cloak x-transition class="mt-4 p-4 accent-color-light rounded-lg">
+                                    <h4 class="font-bold mb-2">主なタスクと必要書類：</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm">
+                                        <li><strong>支給要件照会:</strong> ハローワークで受給資格があるか確認。</li>
+                                        <li><strong>キャリアコンサルティング (特定/専門実践のみ):</strong> 訓練対応キャリアコンサルタントに相談。</li>
+                                        <li><strong>ジョブ・カード作成 (特定/専門実践のみ):</strong> キャリアコンサルティングを通じて作成。</li>
+                                        <li><strong>受給資格確認手続き:</strong> 受講開始日の2週間前までにハローワークへ申請。</li>
+                                        <li class="mt-2 font-semibold">【主な提出物】</li>
+                                        <li>教育訓練給付金受給資格確認票</li>
+                                        <li>本人・住所・マイナンバー確認書類</li>
+                                        <li>証明写真、金融機関の通帳など</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: 受講修了後 -->
+                        <div class="step-item relative pl-16">
+                            <div class="step-icon">2</div>
+                            <div class="pt-1">
+                                <h3 class="text-xl font-bold mb-2">受講修了後</h3>
+                                <p class="text-gray-600 mb-4">講座を修了したら、1ヶ月以内にハローワークで支給申請を行います。</p>
+                                <button @click="openStep = (openStep === 'after' ? '' : 'after')" class="btn-secondary text-sm px-4 py-2 rounded-full">詳細と必要書類を見る</button>
+                                <div x-show="openStep === 'after'" x-cloak x-transition class="mt-4 p-4 accent-color-light rounded-lg">
+                                    <h4 class="font-bold mb-2">主なタスクと必要書類：</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm">
+                                        <li><strong>支給申請:</strong> 訓練修了日の翌日から1ヶ月以内に申請。</li>
+                                        <li class="mt-2 font-semibold">【主な提出物】</li>
+                                        <li>教育訓練給付金支給申請書</li>
+                                        <li>教育訓練修了証明書</li>
+                                        <li>領収書</li>
+                                        <li>受給資格者証（受講前に交付されたもの）</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: 追加給付 -->
+                        <div class="step-item relative pl-16">
+                            <div class="step-icon">3</div>
+                            <div class="pt-1">
+                                <h3 class="text-xl font-bold mb-2">追加給付 (特定/専門実践)</h3>
+                                <p class="text-gray-600 mb-4">資格取得や就職、賃金上昇の条件を満たした場合、追加の給付金を申請できます。</p>
+                                <button @click="openStep = (openStep === 'additional' ? '' : 'additional')" class="btn-secondary text-sm px-4 py-2 rounded-full">詳細と必要書類を見る</button>
+                                <div x-show="openStep === 'additional'" x-cloak x-transition class="mt-4 p-4 accent-color-light rounded-lg">
+                                    <h4 class="font-bold mb-2">主なタスクと必要書類：</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-sm">
+                                        <li><strong>資格取得・就職後の申請:</strong> 条件を満たした日から1ヶ月以内に申請。</li>
+                                        <li><strong>賃金上昇後の申請 (専門実践のみ):</strong> さらに条件を満たした場合、1年以内に申請。</li>
+                                        <li class="mt-2 font-semibold">【主な提出物】</li>
+                                        <li>資格取得等を証明する書類</li>
+                                        <li>賃金の上昇を証明する書類（賃金上昇時）</li>
+                                        <li>その他、基本申請に準ずる書類</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 4. 講座を探す Find a Course -->
+            <section id="search" class="text-center">
+                 <h2 class="text-2xl font-bold mb-4">さあ、あなたの未来を探しに行こう</h2>
+                 <p class="text-gray-600 mb-6 max-w-2xl mx-auto">厚生労働省の検索システムで、給付金対象となる約15,000の講座から、あなたにぴったりのキャリアアッププランを見つけましょう。</p>
+                 <a href="https://www.kyufu.mhlw.go.jp/kensaku/" target="_blank" class="btn-primary inline-block px-10 py-4 rounded-full font-bold text-lg shadow-lg transform hover:scale-105">
+                    対象講座を検索する
+                 </a>
+            </section>
+
+        </main>
+
+        <footer class="text-center mt-16 border-t pt-6">
+            <p class="text-sm text-gray-500">このページは教育訓練給付金制度の概要を分かりやすく解説するものであり、内容の正確性を保証するものではありません。<br>最新の情報や個別のケースについては、必ずお近くのハローワークにご確認ください。</p>
+        </footer>
+    </div>
+
+<script>
+function eligibilityChecker() {
+    return {
+        isFirstTime: true,
+        isEmployed: true,
+        isWithinYear: true,
+        insuranceYears: null,
+        resultMessage: '',
+        resultDetail: '',
+        get isEligible() {
+            if (this.insuranceYears === null || this.insuranceYears < 0) return null;
+            if (!this.isEmployed && !this.isWithinYear) return false;
+
+            if (this.isFirstTime) {
+                return this.insuranceYears >= 1;
+            } else {
+                return this.insuranceYears >= 3;
+            }
+        },
+        updateResult() {
+            if (this.isEligible === null) {
+                this.resultMessage = '';
+                this.resultDetail = '';
+                return;
+            }
+            if (this.isEligible) {
+                this.resultMessage = 'おめでとうございます！給付金の対象となる可能性が高いです。';
+                if (this.isFirstTime) {
+                     this.resultDetail = '初めての方は雇用保険加入期間が1年以上で対象となります。<br>（専門実践教育訓練は原則2年以上必要です）';
+                } else {
+                     this.resultDetail = '2回目以降の方は、前回の利用から3年以上経過し、かつ雇用保険加入期間が3年以上で対象となります。';
+                }
+            } else {
+                this.resultMessage = '残念ながら、現在の条件では対象外の可能性があります。';
+                if (!this.isEmployed && !this.isWithinYear) {
+                    this.resultDetail = '離職後1年を超えている場合、原則として対象外となります。';
+                } else if (this.isFirstTime) {
+                    this.resultDetail = '初めての方は、雇用保険の加入期間が通算1年以上必要です。';
+                } else {
+                    this.resultDetail = '2回目以降の方は、雇用保険の加入期間が通算3年以上必要です。';
+                }
+            }
+        },
+        init() {
+            this.$watch('isFirstTime', () => this.updateResult());
+            this.$watch('isEmployed', () => this.updateResult());
+            this.$watch('isWithinYear', () => this.updateResult());
+            this.$watch('insuranceYears', () => this.updateResult());
+        }
+    }
+}
+
+function benefitCalculator() {
+    return {
+        benefitType: 'general',
+        courseFee: 300000,
+        addBenefit: false,
+        wageIncrease: false,
+        chart: null,
+        selectBenefitType(type) {
+            this.benefitType = type;
+            if (type !== 'professional') {
+                this.wageIncrease = false;
+            }
+            if (type === 'general') {
+                this.addBenefit = false;
+            }
+            this.updateChart();
+        },
+        calculateBenefits() {
+            let fee = Math.max(0, this.courseFee || 0);
+
+            let baseRate = 0, baseCap = 0;
+            let addRate = 0, addCap = 0;
+            let wageRate = 0, wageCap = 0;
+
+            switch (this.benefitType) {
+                case 'general':
+                    baseRate = 0.2; baseCap = 100000;
+                    break;
+                case 'specific':
+                    baseRate = 0.4; baseCap = 200000;
+                    addRate = 0.5; addCap = 250000;
+                    break;
+                case 'professional':
+                    baseRate = 0.5; baseCap = Math.min(fee, 400000);
+                    addRate = 0.7; addCap = Math.min(fee, 560000);
+                    wageRate = 0.8; wageCap = Math.min(fee, 640000);
+                    break;
+            }
+
+            let currentRate = baseRate;
+            let currentCap = baseCap;
+
+            if (this.addBenefit && (this.benefitType === 'specific' || this.benefitType === 'professional')) {
+                currentRate = addRate;
+                currentCap = addCap;
+            }
+            if (this.wageIncrease && this.benefitType === 'professional' && this.addBenefit) {
+                currentRate = wageRate;
+                currentCap = wageCap;
+            }
+            
+            let benefitAmount = Math.min(fee * currentRate, currentCap);
+
+            if (fee > 0) {
+                if (this.benefitType === 'general' && benefitAmount > 0 && benefitAmount < 20005) {
+                    benefitAmount = 0;
+                } else if (benefitAmount > 0 && benefitAmount < 4001) {
+                    benefitAmount = 0;
+                }
+            } else {
+                benefitAmount = 0;
+            }
+            
+            let selfPay = fee - benefitAmount;
+            if (selfPay < 0) selfPay = 0;
+
+            return { selfPay, benefitAmount };
+        },
+        updateChart() {
+            if (!this.chart) return;
+            
+            const { selfPay, benefitAmount } = this.calculateBenefits();
+            
+            this.chart.data.datasets[0].data = [selfPay, benefitAmount];
+            
+            const legendContainer = document.getElementById('chart-legend');
+            if (legendContainer) {
+                legendContainer.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="h-4 w-4 rounded-full mr-2" style="background-color: #A6B1E1;"></span>
+                        <span>自己負担: ${selfPay.toLocaleString()}円</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="h-4 w-4 rounded-full mr-2" style="background-color: #424874;"></span>
+                        <span>国からの給付: ${benefitAmount.toLocaleString()}円</span>
+                    </div>
+                `;
+            }
+
+            this.chart.update();
+        },
+        init() {
+            // Ensure DOM is ready
+            setTimeout(() => {
+                const canvas = document.getElementById('benefitChart');
+                if (!canvas) {
+                    console.error('Canvas element not found');
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    console.error('Unable to get canvas context');
+                    return;
+                }
+
+                try {
+                    this.chart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['自己負担', '国からの給付'],
+                            datasets: [{
+                                data: [200000, 100000],
+                                backgroundColor: ['#A6B1E1', '#424874'],
+                                borderColor: '#FDFBF6',
+                                borderWidth: 4,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: '#FFFFFF',
+                                    titleColor: '#424874',
+                                    bodyColor: '#424874',
+                                    borderColor: '#DCD6F7',
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const value = context.parsed;
+                                            const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${context.label}: ${value.toLocaleString()}円 (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Initial chart update
+                    this.updateChart();
+                } catch (error) {
+                    console.error('Error creating chart:', error);
+                }
+            }, 100);
+        }
+    }
+}
+</script>
+
+</body>
+</html>
